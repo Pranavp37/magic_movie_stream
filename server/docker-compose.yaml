@@ -1,0 +1,31 @@
+version: '3.2'
+services:
+  go-app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DB_CONNECTION_URL: ${DB_CONNECTION_URL}
+      PORT: ${PORT:-8080}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+      - /app/tmp
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:latest
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${DB_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
