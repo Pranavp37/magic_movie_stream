@@ -21,7 +21,7 @@ func GetUserDetails(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 	}
 
-	dbCollection := database.GetMongoCollection("magic_movie_stream", "User")
+	dbCollection := database.GetMongoCollection("chat_application", "user")
 
 	ctx, cancel := context.WithTimeout(context.TODO(), 15*time.Second)
 	defer cancel()
@@ -42,7 +42,7 @@ func GetUserDetails(c *gin.Context) {
 		"user_id": user.User_id,
 		"email":   user.Email,
 		"name":    user.Name,
-		"phone":   user.PhomeNumber,
+		"phone":   user.PhoneNumber,
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": response})

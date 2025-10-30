@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"runtime/debug"
@@ -13,11 +14,26 @@ import (
 	"github.com/Pranavp37/magic_movie_stream/internal/utils"
 	"github.com/bytedance/gopkg/util/logger"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func RegisterUser(c *gin.Context) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": fmt.Sprintf("internal error: %v", r),
+			})
+		}
+	}()
 	// db := h.handler.Database("magic_movie_stream").Collection("User")
-	db := database.GetMongoCollection("magic_movie_stream", "User")
+	db := database.GetMongoCollection("chat_application", "user")
+	if db == nil {
+		logger.Error("Mongo collection is nil")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
 
 	var userData models.UserRegister
 
@@ -66,10 +82,10 @@ func RegisterUser(c *gin.Context) {
 
 	}
 
-	user := models.UserRegister{
+	user := models.UserRegisterResponse{
 		User_id:      Id,
 		Name:         userData.Name,
-		PhomeNumber:  userData.PhomeNumber,
+		PhoneNumber:  userData.PhoneNumber,
 		Email:        userData.Email,
 		Role:         userData.Role,
 		Password:     hashedPassword,
@@ -86,10 +102,10 @@ func RegisterUser(c *gin.Context) {
 
 	}
 
-	response := models.UserRegister{
+	response := models.UserRegisterResponse{
 		User_id:      Id,
 		Name:         userData.Name,
-		PhomeNumber:  user.PhomeNumber,
+		PhoneNumber:  user.PhoneNumber,
 		Role:         userData.Role,
 		Email:        userData.Email,
 		Password:     hashedPassword,
@@ -100,6 +116,80 @@ func RegisterUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": "data added successfully",
 		"data":    response,
+	})
+
+}
+
+func Login(c *gin.Context) {
+	db := database.GetMongoCollection("chat_application", "user")
+
+	var req models.UserLogin
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "email and password are required",
+		})
+		logger.Error("email and password are required")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+
+	defer cancel()
+
+	filter := bson.M{
+		"email": req.Email,
+	}
+
+	var user models.UserRegister
+	err := db.FindOne(ctx, filter).Decode(&user)
+	if err == mongo.ErrNoDocuments {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "user not found",
+		})
+		logger.Error("user not found")
+		return
+
+	} else if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		logger.Error(err.Error())
+		return
+	}
+
+	err = utils.PasswordCompare([]byte(req.Password), []byte(user.Password))
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid password",
+		})
+		logger.Error("invalid password")
+		return
+	}
+
+	token, err := middleware.GenerateAccessAndRefreshToken(user.User_id, user.Email, user.Name, user.Role)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "can't generate token",
+		})
+		logger.Error("can't generate token")
+		return
+	}
+
+	response := models.UserLoginResponse{
+		User_id:      user.User_id,
+		Name:         user.Name,
+		Email:        user.Email,
+		PhoneNumber:  user.PhoneNumber,
+		Role:         user.Role,
+		AccessToken:  token.AccessToken,
+		RefreshToken: token.RefreshToken,
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data":   response,
 	})
 
 }

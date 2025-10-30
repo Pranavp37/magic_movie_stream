@@ -12,7 +12,7 @@ import (
 
 func EmailIsExit(ctx context.Context, email string) (bool, error) {
 
-	collection := database.GetMongoCollection("magic_movie_stream", "User")
+	collection := database.GetMongoCollection("chat_application", "user")
 
 	filter := bson.M{"email": email}
 	err := collection.FindOne(ctx, filter).Err()
@@ -21,7 +21,6 @@ func EmailIsExit(ctx context.Context, email string) (bool, error) {
 
 			return false, nil
 		}
-
 		return false, err
 	}
 	return true, nil
@@ -34,4 +33,15 @@ func PasswordHashing(password []byte) (string, error) {
 		return "", err
 	}
 	return string(hashedpassword), nil
+}
+
+func PasswordCompare(password, hashedPassword []byte) error {
+
+	err := bcrypt.CompareHashAndPassword(hashedPassword, password)
+	if err != nil {
+		return err
+
+	}
+
+	return nil
 }
