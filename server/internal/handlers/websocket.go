@@ -17,6 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -27,6 +28,7 @@ var upgrader = websocket.Upgrader{
 }
 
 var webConnection = make(map[string]*websocket.Conn)
+var userOnline = make(map[string]bool)
 var webmu = &sync.RWMutex{}
 
 func WebSocketConnection(c *gin.Context) {
@@ -41,11 +43,14 @@ func WebSocketConnection(c *gin.Context) {
 	}
 	webmu.Lock()
 	webConnection[user_id] = conn
+	userOnline[user_id] = true
 	webmu.Unlock()
 	defer func() {
 		conn.Close()
 		webmu.Lock()
 		delete(webConnection, user_id)
+		userOnline[user_id] = false
+		BroadcastUserStatus(user_id, false)
 		webmu.Unlock()
 	}()
 
@@ -66,6 +71,9 @@ func WebSocketConnection(c *gin.Context) {
 
 		}
 
+		// infom user is online expect of send user
+		BroadcastUserStatus(user_id, true)
+
 		//send data into database
 		go AddMessagesTOCollections(&msg)
 
@@ -75,6 +83,7 @@ func WebSocketConnection(c *gin.Context) {
 			SendToSender(msg.ReceiverID, &msg)
 			//send data to sender connection if user is online
 			SendTOUserSender(msg.SenderID, &msg)
+
 		case models.MessageSeen:
 			//upadate user message collection
 			UpdateUserMessageSeen(msg.SenderID, &msg)
@@ -96,6 +105,11 @@ func SendToSender(user_id string, msg *models.MessageReceivedModel) {
 		} else {
 			if err := conn.WriteMessage(websocket.TextMessage, msgByte); err != nil {
 				logger.Error("Error writing message to receiver: " + err.Error())
+				webmu.Lock()
+				delete(webConnection, user_id)
+				userOnline[user_id] = false
+				webmu.Unlock()
+				BroadcastUserStatus(user_id, false)
 			}
 		}
 	}
@@ -114,9 +128,33 @@ func SendTOUserSender(user_id string, msg *models.MessageReceivedModel) {
 			if err := conn.WriteMessage(websocket.TextMessage, msgByte); err != nil {
 				logger.Error("Error writing message to sender: " + err.Error())
 
+				webmu.Lock()
+				delete(webConnection, user_id)
+				userOnline[user_id] = false
+				webmu.Unlock()
+				BroadcastUserStatus(user_id, false)
+
 			}
 		}
 	}
+
+}
+
+func BroadcastUserStatus(user_id string, online bool) {
+	webmu.RLock()
+	for uid, conn := range webConnection {
+		if uid == user_id {
+			continue // don't send status to the same user
+		}
+		data := &models.UserStatuSendToUser{
+			Type:   "user_status",
+			UserId: user_id,
+			Online: online,
+		}
+		dataByte, _ := json.Marshal(data)
+		conn.WriteMessage(websocket.TextMessage, dataByte)
+	}
+	webmu.RUnlock()
 
 }
 
@@ -128,6 +166,9 @@ func AddMessagesTOCollections(msg *models.MessageReceivedModel) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 
 	defer cancel()
+
+	//for skipping user sending message id
+	msg.MessageID = primitive.NewObjectID().String()
 
 	_, err := message_db.InsertOne(ctx, msg)
 
@@ -166,7 +207,7 @@ func UpdateUserMessageSeen(user_id string, msg *models.MessageReceivedModel) {
 
 	defer cancel()
 	filters := bson.M{
-		"conversation_id": msg.ConversationID,
+		"message_id": msg.MessageID,
 	}
 
 	update := bson.M{

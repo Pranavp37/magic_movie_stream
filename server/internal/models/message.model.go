@@ -15,10 +15,12 @@ const (
 	FileMessage   MessageType = "file"
 	SystemMessage MessageType = "system"
 	MessageSeen   MessageType = "message_seen"
+	UserStatus    MessageType = "user_status"
 )
 
 type MessageReceivedModel struct {
 	ConversationID string      `json:"conversation_id" bson:"conversation_id"`
+	MessageID      string      `json:"message_id" bson:"message_id"`
 	SenderID       string      `json:"sender_id" bson:"sender_id"`
 	ReceiverID     string      `json:"receiver_id" bson:"receiver_id"`
 	Type           MessageType `json:"message_type" bson:"message_type"`
@@ -32,4 +34,10 @@ type ChatListModel struct {
 	Participants   []string  `json:"participants" bson:"participants"`
 	LastMessage    string    `json:"last_message" bson:"last_message"`
 	LastUpdated    time.Time `json:"last_updated" bson:"last_updated"`
+}
+
+type UserStatuSendToUser struct {
+	Type   MessageType `json:"message_type" bson:"message_type"`
+	UserId string      `json:"user_id" bson:"user_id"`
+	Online bool        `json:"isOnline" bson:"isOnline"`
 }
