@@ -8,11 +8,16 @@ import (
 
 func RegisterHandler(r *gin.Engine) {
 
+	// for texting porpuse
+	r.GET("/", handlers.HelloHandler)
+
 	v1 := r.Group("api/v1")
 	{
-		v1.GET("/hello-dear", handlers.HelloHandler)
+
 		v1.POST("/auth/register", handlers.RegisterUser)
 		v1.POST("/auth/login", handlers.Login)
+		v1.GET("/ws", handlers.WebSocketConnection)
+		v1.GET("/sse", handlers.ChatListSSE)
 	}
 
 	v2 := r.Group("api/v2", middleware.JwtMiddleware())
