@@ -24,6 +24,7 @@ func RegisterHandler(r *gin.Engine) {
 	{
 		v2.GET("/user/details", handlers.GetUserDetails)
 		v2.GET("/user/users/search", handlers.SearchUser)
+		v2.GET("/chat/chatList", handlers.ChatListHistory)
 	}
 
 }

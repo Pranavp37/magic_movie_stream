@@ -33,7 +33,7 @@ var webmu = &sync.RWMutex{}
 
 func WebSocketConnection(c *gin.Context) {
 
-	user_id := c.Query("userId")
+	user_id := c.Query("userID")
 	red := color.New(color.FgRed).SprintFunc()
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
@@ -44,6 +44,7 @@ func WebSocketConnection(c *gin.Context) {
 	webmu.Lock()
 	webConnection[user_id] = conn
 	userOnline[user_id] = true
+	logger.Info("user is connected--------------------------------------")
 	webmu.Unlock()
 	defer func() {
 		conn.Close()
@@ -167,16 +168,17 @@ func AddMessagesTOCollections(msg *models.MessageReceivedModel) {
 
 	defer cancel()
 
+	convID := utils.GenerateConversationId(msg.SenderID, msg.ReceiverID)
+
 	//for skipping user sending message id
 	msg.MessageID = primitive.NewObjectID().String()
+	msg.ConversationID = convID
 
 	_, err := message_db.InsertOne(ctx, msg)
 
 	if err != nil {
 		logger.Error("Failed to save message: " + err.Error())
 	}
-
-	convID := utils.GenerateConversationId(msg.SenderID, msg.ReceiverID)
 
 	filters := bson.M{
 		"conversation_id": convID,

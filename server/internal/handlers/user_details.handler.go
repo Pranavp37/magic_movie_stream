@@ -8,6 +8,7 @@ import (
 	"github.com/Pranavp37/magic_movie_stream/internal/database"
 	"github.com/Pranavp37/magic_movie_stream/internal/middleware"
 	"github.com/Pranavp37/magic_movie_stream/internal/models"
+	"github.com/bytedance/gopkg/util/logger"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -18,7 +19,8 @@ func GetUserDetails(c *gin.Context) {
 
 	cliem, err := middleware.GetTokenData(token)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Somthing went wrong"})
+		logger.Error("fail to get user details" + err.Error())
 	}
 
 	dbCollection := database.GetMongoCollection("chat_application", "user")
