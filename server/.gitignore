@@ -1,0 +1,29 @@
+# Go build
+/bin/
+/build/
+/dist/
+*.exe
+*.out
+
+# IDE files
+.vscode/
+.idea/
+
+# OS junk files
+.DS_Store
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+vendor/
+
+# Docker
+*.pid
+*.seed
+docker-compose.override.yml
