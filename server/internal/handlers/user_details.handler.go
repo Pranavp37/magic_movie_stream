@@ -32,7 +32,7 @@ func GetUserDetails(c *gin.Context) {
 		"user_id": cliem.User_id,
 	}
 
-	user := models.UserRegister{}
+	user := models.UserRegisterResponse{}
 
 	err = dbCollection.FindOne(ctx, filter).Decode(&user)
 	if err != nil {
@@ -41,10 +41,12 @@ func GetUserDetails(c *gin.Context) {
 	}
 
 	response := gin.H{
-		"user_id": user.User_id,
-		"email":   user.Email,
-		"name":    user.Name,
-		"phone":   user.PhoneNumber,
+		"user_id":     user.User_id,
+		"email":       user.Email,
+		"name":        user.Name,
+		"phone":       user.PhoneNumber,
+		"role":        user.Role,
+		"profile_pic": user.ProfileIMG,
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": response})

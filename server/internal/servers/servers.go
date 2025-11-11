@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Pranavp37/magic_movie_stream/internal/config"
+	"github.com/Pranavp37/magic_movie_stream/internal/configs"
 	"github.com/Pranavp37/magic_movie_stream/internal/database"
 	routes "github.com/Pranavp37/magic_movie_stream/internal/routers"
 	"github.com/gin-gonic/gin"
@@ -12,7 +12,7 @@ import (
 
 func Start() {
 	// properties from config
-	configdatas := config.LoadConfig()
+	configdatas := configs.LoadConfig()
 
 	//mongo connection
 	database.MongoDBConnection(configdatas.MongoDB_url)

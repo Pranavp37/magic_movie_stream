@@ -35,22 +35,45 @@ func RegisterUser(c *gin.Context) {
 		return
 	}
 
-	var userData models.UserRegister
-
-	if err := c.ShouldBindJSON(&userData); err != nil {
-
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name , email , passwords are reqried"})
-		log.Printf("Error: %v\nStack Trace:\n%s", err, string(debug.Stack()))
-		return
-
-	}
-
 	ctx, cancel := context.WithTimeout(context.TODO(), 15*time.Second)
 	defer cancel()
 
-	logger.Info("data received ", userData)
+	// user request data
+	name := c.PostForm("name")
+	phoneNumber := c.PostForm("phone_number")
+	email := c.PostForm("email")
+	password := c.PostForm("password")
+	imgHeader, err := c.FormFile("profile_pic")
 
-	EmailIsExit, err := utils.EmailIsExit(ctx, userData.Email)
+	var imgURl string
+
+	if err == nil {
+		Uploader, err := utils.NewS3Uploader(ctx)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to initialize S3 uploader"})
+			logger.Error("S3 UPLOADER error" + err.Error())
+			return
+		}
+
+		imgURl, err = Uploader.FileUploader(ctx, imgHeader)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "file upload failed"})
+			logger.Error("file upload failed" + err.Error())
+			return
+
+		}
+
+	} else {
+		imgURl = ""
+	}
+	if name == "" || email == "" || password == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name, email, and password are required"})
+		logger.Error("name ,email, and password are required")
+		return
+	}
+
+	EmailIsExit, err := utils.EmailIsExit(ctx, email)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error "})
@@ -63,7 +86,7 @@ func RegisterUser(c *gin.Context) {
 		log.Printf("Error: %v\nStack Trace:\n%s", err, string(debug.Stack()))
 		return
 	}
-	pass := []byte(userData.Password)
+	pass := []byte(password)
 	hashedPassword, err := utils.PasswordHashing(pass)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "password hashing failed"})
@@ -73,7 +96,7 @@ func RegisterUser(c *gin.Context) {
 
 	Id := utils.GenerateId()
 
-	token, err := middleware.GenerateAccessAndRefreshToken(Id, userData.Email, userData.Name, userData.Role)
+	token, err := middleware.GenerateAccessAndRefreshToken(Id, email, name, "user")
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "token generation failed"})
@@ -84,10 +107,11 @@ func RegisterUser(c *gin.Context) {
 
 	user := models.UserRegisterResponse{
 		User_id:      Id,
-		Name:         userData.Name,
-		PhoneNumber:  userData.PhoneNumber,
-		Email:        userData.Email,
-		Role:         userData.Role,
+		Name:         name,
+		PhoneNumber:  phoneNumber,
+		Email:        email,
+		Role:         "user",
+		ProfileIMG:   imgURl,
 		Password:     hashedPassword,
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
@@ -104,11 +128,11 @@ func RegisterUser(c *gin.Context) {
 
 	response := models.UserRegisterResponse{
 		User_id:      Id,
-		Name:         userData.Name,
-		PhoneNumber:  user.PhoneNumber,
-		Role:         userData.Role,
-		Email:        userData.Email,
-		Password:     hashedPassword,
+		Name:         name,
+		PhoneNumber:  phoneNumber,
+		Role:         "user",
+		Email:        email,
+		ProfileIMG:   imgURl,
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
 	}

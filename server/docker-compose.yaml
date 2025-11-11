@@ -8,6 +8,11 @@ services:
       DB_CONNECTION_URL: ${DB_CONNECTION_URL}
       PORT: ${PORT:-8080}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      S3_REGION: ${S3_REGION}
+      BUCKET_NAME: ${BUCKET_NAME}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+
     ports:
       - "8080:8080"
     volumes:

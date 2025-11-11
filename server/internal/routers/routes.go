@@ -18,6 +18,8 @@ func RegisterHandler(r *gin.Engine) {
 		v1.POST("/auth/login", handlers.Login)
 		v1.GET("/ws", handlers.WebSocketConnection)
 		v1.GET("/sse", handlers.ChatListSSE)
+		v1.POST("/uploadfile", handlers.FileHandler)
+
 	}
 
 	v2 := r.Group("api/v2", middleware.JwtMiddleware())
@@ -25,6 +27,7 @@ func RegisterHandler(r *gin.Engine) {
 		v2.GET("/user/details", handlers.GetUserDetails)
 		v2.GET("/user/users/search", handlers.SearchUser)
 		v2.GET("/chat/chatList", handlers.ChatListHistory)
+		v2.GET("/chat/chathistory", handlers.ChatHistory)
 	}
 
 }

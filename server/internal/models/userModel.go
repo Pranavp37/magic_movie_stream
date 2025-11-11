@@ -14,6 +14,7 @@ type UserRegisterResponse struct {
 	PhoneNumber  string `bson:"phone_number" json:"phone_number" omitempty:"true"`
 	Role         string `bson:"role" json:"role" default:"user"`
 	Email        string `bson:"email" json:"email" `
+	ProfileIMG   string `bson:"profile_pic" json:"profile_pic" omitempty:"true"`
 	Password     string `bson:"password" json:"password"`
 	AccessToken  string `bson:"access_token" json:"access_token"`
 	RefreshToken string `bson:"refresh_token" json:"refresh_token"`

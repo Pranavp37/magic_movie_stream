@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+
 	"net/http"
 	"strconv"
 	"time"
@@ -50,6 +51,7 @@ func ChatListHistory(c *gin.Context) {
 		logger.Error("failed to decode conversations" + err.Error())
 		return
 	}
+	
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": "success",

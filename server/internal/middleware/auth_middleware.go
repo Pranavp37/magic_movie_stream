@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Pranavp37/magic_movie_stream/internal/config"
+	"github.com/Pranavp37/magic_movie_stream/internal/configs"
 	"github.com/gin-gonic/gin"
 	jwt "github.com/golang-jwt/jwt/v5"
 )
@@ -32,8 +32,8 @@ type JwtTokens struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-var jwtSecretKey = config.LoadConfig().JWT_SECRET_KEY
-var tokenKey_byte = []byte(config.LoadConfig().JWT_SECRET_KEY)
+var jwtSecretKey = configs.LoadConfig().JWT_SECRET_KEY
+var tokenKey_byte = []byte(configs.LoadConfig().JWT_SECRET_KEY)
 
 // GenerateToken generates a JWT token
 func GenerateToken(user_id, email, name, role string, expireAt time.Time, secret_key []byte) (string, error) {
